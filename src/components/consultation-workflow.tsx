@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   ArrowLeft, CreditCard, Gift, Send, Lock, 
   Unlock, CheckCircle2, ChevronRight, AlertCircle, FileText, Loader2
@@ -11,8 +11,8 @@ import { Consultation, Invoice } from '@/lib/storage';
 import PrescriptionBuilder from './prescription-builder';
 import { pdf } from '@react-pdf/renderer';
 import InvoicePDF from './InvoicePDF';
-import { uploadPdfToStorage } from '@/lib/upload-pdf';
 import { sendInvoiceToPatient } from '@/lib/prescription-sender';
+import { completeConsultation } from '@/lib/supabase-service';
 
 interface ConsultationWorkflowProps {
   onBack: () => void;
@@ -44,44 +44,52 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
   }, [invoices, activeConsultationId]);
 
   // Local state copy for easy editing
-  const [consultationType, setConsultationType] = useState<'Paid' | 'Complimentary'>('Paid');
+  const [consultationType, setConsultationType] = useState<'Paid' | 'Complimentary' | 'PAID' | 'COMPLIMENTARY'>('Paid');
   const [doctorNotes, setDoctorNotes] = useState('');
   const [amount, setAmount] = useState('500');
   const [paymentMethod, setPaymentMethod] = useState<'Bank Transfer' | 'Mobile Wallet' | 'Cash' | ''>('');
-  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Waived'>('Pending');
+  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Waived' | 'PENDING' | 'PAID' | 'WAIVED'>('Pending');
 
   // Loading spinner & Notification Toast States
   const [isSharingInvoice, setIsSharingInvoice] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  // Debounce ref for notes auto-save (prevents DB round-trip on every keystroke)
+  const notesSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Synchronize local states when store items load or change
+  // Synchronize local states ONLY when the active consultation/invoice ID changes
+  // (i.e. a different session is loaded). Using full objects as deps caused the effect
+  // to re-fire after every store mutation triggered by handleSaveConsultationState,
+  // which reset the textarea to the just-saved value mid-typing.
   useEffect(() => {
     if (activeConsultation) {
-      setConsultationType(activeConsultation.consultation_type as 'Paid' | 'Complimentary');
+      setConsultationType(activeConsultation.consultation_type);
       setDoctorNotes(activeConsultation.doctor_notes || '');
     }
     if (activeInvoice) {
       setAmount(activeInvoice.amount.toString());
       setPaymentMethod(activeInvoice.payment_method as any || '');
-      setPaymentStatus(activeInvoice.payment_status as any);
+      setPaymentStatus(activeInvoice.payment_status);
     }
-  }, [activeConsultation, activeInvoice]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConsultationId, activeInvoice?.id]);  // stable IDs only — not full objects
 
   // Determine if Rx is locked
   const isRxLocked = useMemo(() => {
-    if (consultationType === 'Complimentary') return false;
-    return paymentStatus !== 'Paid' && paymentStatus !== 'Waived';
+    if (consultationType.toUpperCase() === 'COMPLIMENTARY') return false;
+    const statusUpper = paymentStatus.toUpperCase();
+    return statusUpper !== 'PAID' && statusUpper !== 'WAIVED';
   }, [consultationType, paymentStatus]);
 
   // Save changes to db/store
   const handleSaveConsultationState = async (
     updates: {
-      type?: 'Paid' | 'Complimentary';
+      type?: 'Paid' | 'Complimentary' | 'PAID' | 'COMPLIMENTARY';
       notes?: string;
       invAmount?: number;
       invMethod?: typeof paymentMethod;
@@ -116,11 +124,11 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
           amount: invAmountVal,
           payment_status: invStatusVal,
           payment_method: invMethodVal,
-          paid_at: invStatusVal === 'Paid' ? new Date().toISOString() : null,
+          paid_at: invStatusVal.toUpperCase() === 'PAID' ? new Date().toISOString() : null,
         });
 
         // Trigger confetti burst on Paid payment status!
-        if (invStatusVal === 'Paid' && activeInvoice.payment_status !== 'Paid') {
+        if (invStatusVal.toUpperCase() === 'PAID' && activeInvoice.payment_status.toUpperCase() !== 'PAID') {
           confetti({
             particleCount: 80,
             spread: 60,
@@ -135,19 +143,21 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
   };
 
   // Toggle consultation category
-  const handleToggleConsultationType = async (type: 'Paid' | 'Complimentary') => {
-    setConsultationType(type);
-    if (type === 'Complimentary') {
-      setPaymentStatus('Waived');
+  const handleToggleConsultationType = async (type: 'Paid' | 'Complimentary' | 'PAID' | 'COMPLIMENTARY') => {
+    const isPaid = type.toUpperCase() === 'PAID';
+    const normType = isPaid ? 'PAID' : 'COMPLIMENTARY';
+    setConsultationType(normType);
+    if (!isPaid) {
+      setPaymentStatus('WAIVED');
       await handleSaveConsultationState({
-        type: 'Complimentary',
-        invStatus: 'Waived',
+        type: 'COMPLIMENTARY',
+        invStatus: 'WAIVED',
       });
     } else {
-      setPaymentStatus('Pending');
+      setPaymentStatus('PENDING');
       await handleSaveConsultationState({
-        type: 'Paid',
-        invStatus: 'Pending',
+        type: 'PAID',
+        invStatus: 'PENDING',
       });
       // Auto-focus amount field when switching to Paid
       setTimeout(() => amountRef.current?.focus(), 150);
@@ -155,16 +165,16 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
   };
 
   const handleMarkAsPaid = async () => {
-    setPaymentStatus('Paid');
+    setPaymentStatus('PAID');
     if (!paymentMethod) {
       setPaymentMethod('Cash');
       await handleSaveConsultationState({
-        invStatus: 'Paid',
+        invStatus: 'PAID',
         invMethod: 'Cash',
       });
     } else {
       await handleSaveConsultationState({
-        invStatus: 'Paid',
+        invStatus: 'PAID',
       });
     }
   };
@@ -207,15 +217,19 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
 
   const handleFinishConsultation = async () => {
     if (!activeConsultation) return;
+    showToast('Closing session...', 'info');
     try {
-      await updateConsultation({
-        ...activeConsultation,
-        status: 'Completed',
-      });
+      // Use service layer to set status to COMPLETED
+      const { error } = await completeConsultation(activeConsultation.id);
+      if (error) {
+        // Fallback to store update
+        await updateConsultation({ ...activeConsultation, status: 'COMPLETED' });
+      }
       setActiveConsultationId(null);
       onBack();
     } catch (e) {
       console.error('Failed to complete consultation:', e);
+      showToast('Failed to close session. Please try again.', 'error');
     }
   };
 
@@ -271,39 +285,41 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
             <div className="grid grid-cols-2 gap-2 bg-muted/50 p-1.5 rounded-xl border border-border/60">
               <button
                 type="button"
-                onClick={() => handleToggleConsultationType('Paid')}
+                onClick={() => handleToggleConsultationType('PAID')}
                 className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all focus:outline-none ${
-                  consultationType === 'Paid'
+                  consultationType.toUpperCase() === 'PAID'
                     ? 'bg-card text-foreground shadow-sm border border-border'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <CreditCard size={14} className={consultationType === 'Paid' ? 'text-primary' : ''} />
+                <CreditCard size={14} className={consultationType.toUpperCase() === 'PAID' ? 'text-primary' : ''} />
                 Paid Consult
               </button>
               <button
                 type="button"
-                onClick={() => handleToggleConsultationType('Complimentary')}
+                onClick={() => handleToggleConsultationType('COMPLIMENTARY')}
                 className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all focus:outline-none ${
-                  consultationType === 'Complimentary'
+                  consultationType.toUpperCase() === 'COMPLIMENTARY'
                     ? 'bg-card text-foreground shadow-sm border border-border'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Gift size={14} className={consultationType === 'Complimentary' ? 'text-primary' : ''} />
+                <Gift size={14} className={consultationType.toUpperCase() === 'COMPLIMENTARY' ? 'text-primary' : ''} />
                 Complimentary
               </button>
             </div>
           </div>
 
           {/* 2. Billing details (only if Paid) */}
-          {consultationType === 'Paid' ? (
+          {consultationType.toUpperCase() === 'PAID' ? (
             <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-border pb-3.5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Invoice & Payment</h3>
                 <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${
-                  paymentStatus === 'Paid'
+                  paymentStatus.toUpperCase() === 'PAID'
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10'
+                    : paymentStatus.toUpperCase() === 'WAIVED'
+                    ? 'bg-gray-500/10 text-muted-foreground border border-gray-500/10'
                     : 'bg-rose-500/10 text-rose-500 border border-rose-500/10'
                 }`}>
                   {paymentStatus}
@@ -366,7 +382,7 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
                     </>
                   )}
                 </button>
-                {paymentStatus !== 'Paid' && (
+                {paymentStatus.toUpperCase() !== 'PAID' && (
                   <button
                     type="button"
                     onClick={handleMarkAsPaid}
@@ -398,7 +414,17 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
             <textarea
               value={doctorNotes}
               onChange={(e) => {
-                setDoctorNotes(e.target.value);
+                const val = e.target.value;
+                setDoctorNotes(val);
+                // Debounce the DB save: wait 800ms after the user stops typing
+                if (notesSaveTimer.current) clearTimeout(notesSaveTimer.current);
+                notesSaveTimer.current = setTimeout(() => {
+                  handleSaveConsultationState({ notes: val });
+                }, 800);
+              }}
+              onBlur={(e) => {
+                // Flush immediately when focus leaves the textarea
+                if (notesSaveTimer.current) clearTimeout(notesSaveTimer.current);
                 handleSaveConsultationState({ notes: e.target.value });
               }}
               placeholder="Record chief complaints, key modalities (aggravation/amelioration), thermal symptoms, diagnostic parameters, or laboratory investigation recommendations..."

@@ -1,57 +1,32 @@
-import { supabase, isSupabaseConfigured } from './storage';
+/**
+ * upload-pdf.ts  ← thin compatibility shim
+ * ──────────────────────────────────────────────────────────────────────────
+ * Re-exports uploadPdfToStorage backed by the canonical supabase-service.ts
+ * uploadPdf() function.  Existing callers that import `uploadPdfToStorage`
+ * continue to work without changes.
+ *
+ * NOTE: On Supabase failure this wrapper falls back to a local blob: URL so
+ * that prescription-builder.tsx (Generate PDF button) still works offline.
+ * prescription-sender.tsx uses uploadPdf() directly and never returns blob: URLs.
+ * ──────────────────────────────────────────────────────────────────────────
+ */
+
+import { uploadPdf } from './supabase-service';
 
 /**
- * Uploads a generated PDF blob to the 'clinic-documents' Supabase bucket.
- * Organizes files into sub-folders ('invoices' or 'prescriptions').
- * 
- * @param blob The generated PDF Blob object
- * @param fileName Unique file name (e.g., invoice_ID.pdf)
- * @param folder Sub-folder destination ('invoices' | 'prescriptions')
- * @returns Resolves to the public CDN URL of the uploaded document or a fallback local object URL
+ * @deprecated Prefer importing `uploadPdf` from `@/lib/supabase-service` directly.
  */
 export async function uploadPdfToStorage(
   blob: Blob,
   fileName: string,
   folder: 'invoices' | 'prescriptions'
 ): Promise<string> {
-  const filePath = `${folder}/${fileName}`;
+  const { data: url, error } = await uploadPdf(blob, fileName, folder);
 
-  if (!isSupabaseConfigured || !supabase) {
-    console.warn('Supabase credentials not configured. Falling back to local Blob URL.');
-    return URL.createObjectURL(blob);
-  }
+  if (url) return url;
 
-  try {
-    // Upload file to the 'clinic-documents' bucket
-    const { data, error } = await supabase.storage
-      .from('clinic-documents')
-      .upload(filePath, blob, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: 'application/pdf',
-      });
-
-    if (error) {
-      // Log storage upload error details specifically
-      console.error(`Supabase Storage upload failed for path "${filePath}":`, error.message || error);
-      throw error;
-    }
-
-    // Retrieve the public URL for the newly uploaded file
-    const { data: urlData } = supabase.storage
-      .from('clinic-documents')
-      .getPublicUrl(data.path);
-
-    if (!urlData || !urlData.publicUrl) {
-      throw new Error(`Could not resolve public URL for path "${data.path}"`);
-    }
-
-    return urlData.publicUrl;
-  } catch (err: any) {
-    console.error(`Exception during PDF storage upload for path "${filePath}":`, err.message || err);
-    
-    // In case of any exception (network error, policy restrictions, bucket does not exist, etc.),
-    // return a local object URL to maintain full app functionalities on the client.
-    return URL.createObjectURL(blob);
-  }
+  // Fallback to local object URL so Generate PDF still works offline
+  console.warn('[uploadPdfToStorage] Supabase upload failed, returning local blob URL:', error);
+  return URL.createObjectURL(blob);
 }
+

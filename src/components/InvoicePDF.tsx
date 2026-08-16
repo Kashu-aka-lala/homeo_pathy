@@ -27,9 +27,10 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   clinicName: {
-    fontSize: 18,
+    fontSize: 14.5,
     fontWeight: 'bold',
     color: '#059669',
+    letterSpacing: 0.3,
   },
   doctorName: {
     fontSize: 11.5,
@@ -164,10 +165,8 @@ export default function InvoicePDF({
         {/* Clinic & Doctor Header */}
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text style={styles.clinicName}>{doctorInfo.clinicName || 'Yashfeen Homoeopathic Clinic'}</Text>
-            <Text style={styles.doctorName}>
-              {doctorDisplayName} {doctorInfo.qualifications ? `• ${doctorInfo.qualifications}` : ''}
-            </Text>
+            <Text style={styles.clinicName}>YASHFEEN HOMOEOPATHIC CLINIC</Text>
+            <Text style={styles.doctorName}>DR. UMAR FAROOQ • DHMS (RMP) Physician</Text>
             <Text style={styles.subText}>
               {doctorInfo.regNo ? `Reg No: ${doctorInfo.regNo} | ` : ''}Contact: {doctorInfo.contact || '+92 300 1234567'}
             </Text>
@@ -193,7 +192,13 @@ export default function InvoicePDF({
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Invoice #:</Text>
-            <Text style={styles.value}>{invoiceNumber || `INV-${Date.now().toString().slice(-6)}`}</Text>
+            <Text style={styles.value}>
+              {invoiceNumber
+                ? invoiceNumber.startsWith('INV-')
+                  ? `INV-${invoiceNumber.slice(4, 12)}`
+                  : `INV-${invoiceNumber.slice(0, 8)}`
+                : `INV-${Date.now().toString().slice(-6)}`}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Selected Method:</Text>
@@ -203,7 +208,7 @@ export default function InvoicePDF({
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Consultation Fee Payable:</Text>
+            <Text style={styles.totalLabel}>Consultation Fee:</Text>
             <Text style={styles.totalAmount}>Rs. {fee}</Text>
           </View>
         </View>

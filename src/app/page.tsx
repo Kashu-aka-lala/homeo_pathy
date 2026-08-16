@@ -56,9 +56,9 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     const totalPatients = patients.length;
     const totalConsults = consultations.length;
-    const pendingInvoices = invoices.filter((i) => i.payment_status === 'Pending').length;
+    const pendingInvoices = invoices.filter((i) => i.payment_status.toUpperCase() === 'PENDING').length;
     const revenue = invoices
-      .filter((i) => i.payment_status === 'Paid')
+      .filter((i) => i.payment_status.toUpperCase() === 'PAID')
       .reduce((sum, item) => sum + Number(item.amount), 0);
 
     return [

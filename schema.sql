@@ -19,9 +19,9 @@ CREATE INDEX IF NOT EXISTS idx_patients_search ON patients (full_name, phone);
 CREATE TABLE IF NOT EXISTS consultations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
-    consultation_type TEXT NOT NULL CHECK (consultation_type IN ('Paid', 'Complimentary')),
+    consultation_type TEXT NOT NULL CHECK (consultation_type IN ('Paid', 'Complimentary', 'PAID', 'COMPLIMENTARY')),
     doctor_notes TEXT DEFAULT '',
-    status TEXT NOT NULL CHECK (status IN ('Draft', 'Completed')),
+    status TEXT NOT NULL CHECK (status IN ('Draft', 'Completed', 'OPEN', 'COMPLETED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     consultation_id UUID NOT NULL REFERENCES consultations(id) ON DELETE CASCADE,
     amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
-    payment_status TEXT NOT NULL CHECK (payment_status IN ('Pending', 'Paid', 'Waived')),
+    payment_status TEXT NOT NULL CHECK (payment_status IN ('Pending', 'Paid', 'Waived', 'PENDING', 'PAID', 'WAIVED')),
     payment_method TEXT CHECK (payment_method IN ('Bank Transfer', 'Mobile Wallet', 'Cash')),
     paid_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

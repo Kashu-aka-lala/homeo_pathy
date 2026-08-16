@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Fixes Cross-Origin errors when accessing from mobile or local Wi-Fi IP
+  allowedDevOrigins: [
+    "192.168.*.*",
+    "10.*.*.*",
+    "localhost:3000",
+  ],
+  typescript: {
+    ignoreBuildErrors: false,
+  },
 };
 
 export default nextConfig;

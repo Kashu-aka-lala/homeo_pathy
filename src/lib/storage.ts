@@ -15,9 +15,9 @@ export interface Patient {
 export interface Consultation {
   id: string;
   patient_id: string;
-  consultation_type: 'Paid' | 'Complimentary';
+  consultation_type: 'Paid' | 'Complimentary' | 'PAID' | 'COMPLIMENTARY';
   doctor_notes?: string;
-  status: 'Draft' | 'Completed';
+  status: 'Draft' | 'Completed' | 'OPEN' | 'COMPLETED';
   created_at?: string;
 }
 
@@ -25,7 +25,7 @@ export interface Invoice {
   id: string;
   consultation_id: string;
   amount: number;
-  payment_status: 'Pending' | 'Paid' | 'Waived';
+  payment_status: 'Pending' | 'Paid' | 'Waived' | 'PENDING' | 'PAID' | 'WAIVED';
   payment_method?: 'Bank Transfer' | 'Mobile Wallet' | 'Cash' | '';
   paid_at?: string | null;
   created_at?: string;
@@ -52,7 +52,7 @@ export interface Prescription {
 // Supabase Client Setup (Dual Mode Check)
 // ----------------------------------------------------
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 

@@ -255,6 +255,7 @@ export default function PrescriptionBuilder({ consultationId }: PrescriptionBuil
         medicines: saved.medicines,
         precautions: saved.diet_precautions,
         doctorInfo: doctorInfo,
+        pdfUrl: generatedUrl,
       });
 
     } catch (err: any) {

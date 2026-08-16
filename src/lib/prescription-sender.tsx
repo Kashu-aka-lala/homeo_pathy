@@ -4,7 +4,54 @@ import PrescriptionPDF from '@/components/PrescriptionPDF';
 import InvoicePDF from '@/components/InvoicePDF';
 import { Patient, Consultation, Medicine, Invoice } from './storage';
 import { DEFAULT_DOCTOR_INFO } from './constants';
-import { uploadPdfToStorage } from './upload-pdf';
+import { uploadPdf, sanitizePhone } from './supabase-service';
+
+// ─── Device detection ─────────────────────────────────────────────────────────
+
+const isMobileDevice = (): boolean => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// ─── Doctor name helper ───────────────────────────────────────────────────────
+
+/** Ensures exactly one "Dr." prefix – never "Dr. Dr." */
+function formatDoctorName(rawName: string): string {
+  let name = rawName.trim();
+  // Strip leading duplicate Dr. prefixes
+  while (/^dr\.?\s+dr\.?\s*/i.test(name)) {
+    name = name.replace(/^dr\.?\s+/i, '');
+  }
+  if (!/^dr\.?\s+/i.test(name)) {
+    name = `Dr. ${name}`;
+  }
+  return name;
+}
+
+// ─── Local download helper ────────────────────────────────────────────────────
+
+function triggerLocalDownload(blob: Blob, fileName: string): void {
+  const objUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(objUrl), 5000);
+}
+
+// ─── WhatsApp launcher ────────────────────────────────────────────────────────
+
+function openWhatsApp(rawPhone: string, messageText: string): void {
+  const cleanPhone = sanitizePhone(rawPhone);
+  const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(messageText)}`;
+  window.open(waUrl, '_blank');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sendPrescriptionToPatient
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface SendPrescriptionParams {
   patient: Patient;
@@ -12,12 +59,15 @@ interface SendPrescriptionParams {
   medicines: Medicine[];
   precautions: string[];
   doctorInfo: typeof DEFAULT_DOCTOR_INFO;
+  pdfUrl?: string | null; // optional pre-uploaded URL; we'll upload if missing
 }
 
 /**
- * Generates the Prescription PDF and dispatches it via a dual-sharing engine:
- * 1. If navigator.share with files is supported (e.g. mobile Safari/Chrome), shares the PDF file directly.
- * 2. Otherwise (e.g. desktop), triggers a local download and redirects the browser to WhatsApp Web.
+ * Generates the Prescription PDF, uploads to Supabase Storage, and dispatches:
+ *  • Mobile: navigator.share (with actual file attachment)
+ *  • Desktop: local backup download + direct WhatsApp Web link with CDN URL
+ *
+ * The WhatsApp message NEVER contains a blob: URL.
  */
 export async function sendPrescriptionToPatient({
   patient,
@@ -25,79 +75,74 @@ export async function sendPrescriptionToPatient({
   medicines,
   precautions,
   doctorInfo,
+  pdfUrl: existingPdfUrl,
 }: SendPrescriptionParams): Promise<void> {
-  try {
-    // 1. Format the Doctor's name to ensure no double "Dr. Dr." prefixes
-    let cleanDocName = doctorInfo.name.trim();
-    while (/^dr\.?\s+dr\.?\s+/i.test(cleanDocName)) {
-      cleanDocName = cleanDocName.replace(/^dr\.?\s+/i, '');
+  const cleanDocName = formatDoctorName(doctorInfo.name);
+
+  // 1. Generate PDF blob
+  const pdfBlob = await pdf(
+    <PrescriptionPDF
+      doctorInfo={doctorInfo}
+      patient={patient}
+      consultation={consultation}
+      medicines={medicines}
+      dietPrecautions={precautions}
+    />
+  ).toBlob();
+
+  const fileName = `Rx_${patient.full_name.replace(/\s+/g, '_')}.pdf`;
+
+  // 2. Upload to Supabase Storage (always attempt; use existing URL as fallback)
+  let permanentUrl: string | null = existingPdfUrl ?? null;
+  if (!permanentUrl) {
+    const uploadFileName = `rx_${consultation.id}_${Date.now()}.pdf`;
+    const { data: uploadedUrl, error: uploadError } = await uploadPdf(pdfBlob, uploadFileName, 'prescriptions');
+    if (uploadError) {
+      console.warn('[sendPrescription] Upload failed:', uploadError);
+    } else {
+      permanentUrl = uploadedUrl;
     }
-    if (!/^dr\.?\s+/i.test(cleanDocName)) {
-      cleanDocName = `Dr. ${cleanDocName}`;
-    }
-
-    // 2. Compile the PDF Blob
-    const pdfBlob = await pdf(
-      <PrescriptionPDF
-        doctorInfo={doctorInfo}
-        patient={patient}
-        consultation={consultation}
-        medicines={medicines}
-        dietPrecautions={precautions}
-      />
-    ).toBlob();
-
-    const fileName = `Prescription_${patient.full_name.replace(/\s+/g, '_')}.pdf`;
-    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-    // 3. Format Dietary Precautions & Message Text
-    const formattedPrecautions = precautions.length > 0
-      ? precautions.map((p) => ` • ${p}`).join('\n')
-      : ' • None specified';
-
-    const messageText = `*Assalam-o-Alaikum ${patient.full_name},*
-
-Your prescription from *${cleanDocName}* (${doctorInfo.clinicName || 'Yashfeen Homoeopathic Clinic'}) is attached.
-
-*Dietary Precautions & Instructions:*
-${formattedPrecautions}
-
-_Please take the remedies strictly as directed. Wishing you good health!_`;
-
-    // 4. Mobile / Supported Device Flow (Web Share API - Sends Actual PDF File)
-    if (
-      typeof navigator !== 'undefined' &&
-      navigator.canShare &&
-      navigator.canShare({ files: [pdfFile] })
-    ) {
-      await navigator.share({
-        files: [pdfFile],
-        title: `${patient.full_name} - Prescription`,
-        text: messageText,
-      });
-      return;
-    }
-
-    // 5. Desktop Fallback: Auto-download PDF + Open WhatsApp Web
-    const downloadUrl = URL.createObjectURL(pdfBlob);
-    const downloadLink = document.createElement('a');
-    downloadLink.href = downloadUrl;
-    downloadLink.download = fileName;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(downloadUrl);
-
-    // Open WhatsApp Web with pre-formatted message
-    const cleanPhone = patient.phone.replace(/[^0-9]/g, '');
-    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(messageText)}`;
-    window.open(waUrl, '_blank');
-
-  } catch (error) {
-    console.error('Error sharing prescription:', error);
-    throw error;
   }
+
+  // 3. Build WhatsApp message
+  const formattedPrecautions = precautions.length > 0
+    ? precautions.map((p) => ` • ${p}`).join('\n')
+    : ' • None specified';
+
+  let messageText = `*Assalam-o-Alaikum ${patient.full_name},*\n\nYour prescription from *${cleanDocName}* (${doctorInfo.clinicName || 'Yashfeen Homoeopathic Clinic'}) is ready.`;
+
+  if (permanentUrl) {
+    messageText += `\n\n*Prescription Link:* ${permanentUrl}`;
+  } else {
+    messageText += `\n\nYour prescription PDF has been downloaded to your device.`;
+  }
+
+  messageText += `\n\n*Dietary Precautions & Instructions:*\n${formattedPrecautions}\n\n_Please take the remedies strictly as directed. Wishing you good health!_\n\n_— ${cleanDocName}, ${doctorInfo.clinicName}_`;
+
+  // 4. Mobile: use Web Share API to attach the actual file
+  const isMobile = isMobileDevice();
+  if (
+    isMobile &&
+    typeof navigator !== 'undefined' &&
+    navigator.canShare &&
+    navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })
+  ) {
+    await navigator.share({
+      files: [new File([pdfBlob], fileName, { type: 'application/pdf' })],
+      title: `${patient.full_name} – Prescription`,
+      text: messageText,
+    });
+    return;
+  }
+
+  // 5. Desktop: download backup + open WhatsApp directly (NO navigator.share)
+  triggerLocalDownload(pdfBlob, fileName);
+  openWhatsApp(patient.phone, messageText);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sendInvoiceToPatient
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface SendInvoiceParams {
   patient: Patient;
@@ -109,10 +154,12 @@ interface SendInvoiceParams {
 }
 
 /**
- * Generates the Consultation Invoice PDF, uploads to Supabase, and dispatches via a dual-sharing engine:
- * 1. Uploads generated PDF to Supabase Storage 'clinic-documents' in 'invoices/' folder.
- * 2. If navigator.share is supported, shares the PDF file directly with billing link details.
- * 3. Otherwise (desktop), triggers a local download and redirects the browser to WhatsApp Web.
+ * Generates the Invoice PDF, uploads to Supabase Storage, and dispatches:
+ *  • Mobile: navigator.share (with actual file attachment)
+ *  • Desktop: local backup download + direct WhatsApp Web link with CDN URL
+ *
+ * Returns the permanent public URL so the caller can persist it on the invoice row.
+ * The WhatsApp message NEVER contains a blob: URL.
  */
 export async function sendInvoiceToPatient({
   patient,
@@ -122,93 +169,80 @@ export async function sendInvoiceToPatient({
   paymentMethod,
   doctorInfo,
 }: SendInvoiceParams): Promise<string> {
-  try {
-    // 1. Format the Doctor's name to ensure no double "Dr. Dr." prefixes
-    let cleanDocName = doctorInfo.name.trim();
-    while (/^dr\.?\s+dr\.?\s+/i.test(cleanDocName)) {
-      cleanDocName = cleanDocName.replace(/^dr\.?\s+/i, '');
-    }
-    if (!/^dr\.?\s+/i.test(cleanDocName)) {
-      cleanDocName = `Dr. ${cleanDocName}`;
-    }
+  const cleanDocName = formatDoctorName(doctorInfo.name);
 
-    // 2. Compile the A5 PDF Blob
-    const pdfBlob = await pdf(
-      <InvoicePDF
-        patient={{
-          name: patient.full_name,
-          phone: patient.phone,
-          city: patient.city,
-        }}
-        fee={fee}
-        paymentMethod={paymentMethod}
-        doctorInfo={{
-          name: doctorInfo.name,
-          clinicName: doctorInfo.clinicName,
-          qualifications: doctorInfo.degree,
-          regNo: doctorInfo.regNo,
-          contact: doctorInfo.phone,
-        }}
-        invoiceNumber={`INV-${invoice.id}`}
-      />
-    ).toBlob();
+  // 1. Generate PDF blob
+  const pdfBlob = await pdf(
+    <InvoicePDF
+      patient={{
+        name:  patient.full_name,
+        phone: patient.phone,
+        city:  patient.city,
+      }}
+      fee={fee}
+      paymentMethod={paymentMethod}
+      doctorInfo={{
+        name:           doctorInfo.name,
+        clinicName:     doctorInfo.clinicName,
+        qualifications: doctorInfo.degree,
+        regNo:          doctorInfo.regNo,
+        contact:        doctorInfo.phone,
+      }}
+      invoiceNumber={`INV-${invoice.id}`}
+    />
+  ).toBlob();
 
-    const fileName = `Invoice_${patient.full_name.replace(/\s+/g, '_')}.pdf`;
-    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+  const fileName = `Invoice_${patient.full_name.replace(/\s+/g, '_')}.pdf`;
 
-    // 3. Upload to Supabase Storage
-    const uploadedUrl = await uploadPdfToStorage(pdfBlob, fileName, 'invoices');
-
-    // 4. Format Message Text
-    const messageText = `*Assalam-o-Alaikum ${patient.full_name},*
-
-Your consultation fee invoice from *${doctorInfo.clinicName || 'Yashfeen Homoeopathic Clinic'}* is ready.
-
-*Fee Amount:* Rs. ${fee}
-*Payment Method:* ${paymentMethod}
-*Invoice Link:* ${uploadedUrl}
-
-*Official Payment Account Details:*
-• Bank: Meezan Bank / Askari Bank
-• Account Title: ${cleanDocName}
-• IBAN / Account #: PK00XXXX00000000000000
-• Easypaisa / JazzCash: ${doctorInfo.phone}
-
-_After completing the fund transfer, kindly send a screenshot of the payment receipt to start your consultation. Wishing you good health!_`;
-
-    // 5. Mobile / Supported Device Flow (Web Share API - Sends Actual PDF File)
-    if (
-      typeof navigator !== 'undefined' &&
-      navigator.canShare &&
-      navigator.canShare({ files: [pdfFile] })
-    ) {
-      await navigator.share({
-        files: [pdfFile],
-        title: `${patient.full_name} - Consultation Invoice`,
-        text: messageText,
-      });
-      return uploadedUrl;
-    }
-
-    // 6. Desktop Fallback: Auto-download PDF + Open WhatsApp Web
-    const downloadUrl = URL.createObjectURL(pdfBlob);
-    const downloadLink = document.createElement('a');
-    downloadLink.href = downloadUrl;
-    downloadLink.download = fileName;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(downloadUrl);
-
-    // Open WhatsApp Web with pre-formatted message
-    const cleanPhone = patient.phone.replace(/[^0-9]/g, '');
-    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(messageText)}`;
-    window.open(waUrl, '_blank');
-
-    return uploadedUrl;
-
-  } catch (error) {
-    console.error('Error sharing invoice:', error);
-    throw error;
+  // 2. Upload to Supabase Storage
+  const uploadFileName = `inv_${invoice.id}_${Date.now()}.pdf`;
+  const { data: permanentUrl, error: uploadError } = await uploadPdf(pdfBlob, uploadFileName, 'invoices');
+  if (uploadError) {
+    console.warn('[sendInvoice] Upload failed:', uploadError);
   }
+
+  // 3. Build WhatsApp message (uses CDN URL; gracefully omits link if upload failed)
+  const messageText = [
+    `*Assalam-o-Alaikum ${patient.full_name},*`,
+    ``,
+    `Your consultation fee invoice from *${doctorInfo.clinicName || 'Yashfeen Homoeopathic Clinic'}* is ready.`,
+    ``,
+    `*Fee Amount:* Rs. ${fee}`,
+    `*Payment Method:* ${paymentMethod}`,
+    permanentUrl ? `*Invoice Link:* ${permanentUrl}` : null,
+    ``,
+    `*Official Payment Account Details:*`,
+    `- Bank: Meezan Bank / Askari Bank`,
+    `- Account Title: ${cleanDocName}`,
+    `- IBAN / Account #: PK00XXXX00000000000000`,
+    `- Easypaisa / JazzCash: ${doctorInfo.phone}`,
+    ``,
+    `_After completing the fund transfer, kindly send a screenshot of the payment receipt to start your consultation. Wishing you good health!_`,
+    ``,
+    `_— ${cleanDocName}, ${doctorInfo.clinicName}_`,
+  ].filter((line) => line !== null).join('\n');
+
+  // 4. Mobile: use Web Share API to attach the actual file
+  const isMobile = isMobileDevice();
+  if (
+    isMobile &&
+    typeof navigator !== 'undefined' &&
+    navigator.canShare &&
+    navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })
+  ) {
+    await navigator.share({
+      files: [new File([pdfBlob], fileName, { type: 'application/pdf' })],
+      title: `${patient.full_name} – Consultation Invoice`,
+      text: messageText,
+    });
+    return permanentUrl ?? '';
+  }
+
+  // 5. Desktop: download backup + open WhatsApp directly (NO navigator.share)
+  triggerLocalDownload(pdfBlob, fileName);
+  openWhatsApp(patient.phone, messageText);
+
+  return permanentUrl ?? '';
 }
+
+

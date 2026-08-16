@@ -7,7 +7,8 @@ import {
   Clock, AlertCircle, Eye, RefreshCw
 } from 'lucide-react';
 import { useEmrStore } from '@/lib/store';
-import { Patient, Consultation, Invoice, Prescription } from '@/lib/storage';
+import { Patient, Consultation, Invoice, Prescription, supabase } from '@/lib/storage';
+import { createConsultation, createOrUpdateInvoice } from '@/lib/supabase-service';
 import AddPatientModal from './add-patient-modal';
 
 interface PatientRegistryProps {
@@ -18,12 +19,13 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
   const { 
     patients, consultations, invoices, prescriptions, 
     selectedPatientId, setSelectedPatientId, setActiveConsultationId,
-    addConsultation, addInvoice
+    addConsultation, addInvoice, loadData
   } = useEmrStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
+  const [isStartingConsultation, setIsStartingConsultation] = useState(false);
 
   // 1. Filtered Patients list
   const filteredPatients = useMemo(() => {
@@ -78,29 +80,52 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
 
   const handleInitiateConsultation = async () => {
     if (!selectedPatient) return;
-    
-    // Create draft consultation
-    try {
-      const newConsultation = await addConsultation({
-        patient_id: selectedPatient.id,
-        consultation_type: 'Paid', // default to Paid, editable in wizard
-        status: 'Draft',
-        doctor_notes: '',
-      });
+    setIsStartingConsultation(true);
 
-      // Create empty/pending invoice linked to it
-      await addInvoice({
-        consultation_id: newConsultation.id,
-        amount: 500, // default fee
-        payment_status: 'Pending',
-        payment_method: '',
-        paid_at: null,
-      });
+    try {
+      let newConsultation: any;
+
+      if (supabase) {
+        // Use the centralized service layer (normalizes type to uppercase, trims notes)
+        const { data, error } = await createConsultation(selectedPatient.id, 'PAID', '');
+        if (error || !data) throw new Error(error ?? 'Failed to create consultation');
+        newConsultation = data;
+
+        // Create the initial PENDING invoice via service layer
+        const { error: invError } = await createOrUpdateInvoice(
+          newConsultation.id,
+          500,
+          'Bank Transfer',
+          'PENDING'
+        );
+        if (invError) throw new Error(invError);
+
+        // Refresh EMR store state
+        await loadData();
+      } else {
+        // Local storage fallback flow
+        newConsultation = await addConsultation({
+          patient_id:        selectedPatient.id,
+          consultation_type: 'Paid',
+          status:            'Draft',
+          doctor_notes:      '',
+        });
+
+        await addInvoice({
+          consultation_id: newConsultation.id,
+          amount:          500,
+          payment_status:  'Pending',
+          payment_method:  '',
+          paid_at:         null,
+        });
+      }
 
       setActiveConsultationId(newConsultation.id);
       onStartConsultation();
     } catch (err) {
       console.error('Failed to create consultation:', err);
+    } finally {
+      setIsStartingConsultation(false);
     }
   };
 
@@ -241,10 +266,20 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
               <div className="flex flex-row sm:flex-col gap-2 justify-end">
                 <button
                   onClick={handleInitiateConsultation}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-all shadow-md focus:outline-none"
+                  disabled={isStartingConsultation}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-all shadow-md focus:outline-none disabled:opacity-60"
                 >
-                  <PlusCircle size={15} />
-                  New Consultation
+                  {isStartingConsultation ? (
+                    <>
+                      <span className="h-3.5 w-3.5 rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle size={15} />
+                      New Consultation
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={(e) => handleEditPatient(selectedPatient, e)}
@@ -353,16 +388,16 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs text-muted-foreground">Status:</span>
                                   <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${
-                                    invoice.payment_status === 'Paid'
+                                    invoice.payment_status.toUpperCase() === 'PAID'
                                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10'
-                                      : invoice.payment_status === 'Waived'
+                                      : invoice.payment_status.toUpperCase() === 'WAIVED'
                                       ? 'bg-gray-500/10 text-muted-foreground border border-gray-500/10'
                                       : 'bg-rose-500/10 text-rose-500 border border-rose-500/10'
                                   }`}>
                                     {invoice.payment_status}
                                   </span>
                                 </div>
-                                {invoice.payment_status === 'Pending' && (
+                                {invoice.payment_status.toUpperCase() === 'PENDING' && (
                                   <button
                                     onClick={() => handleShareInvoiceWhatsApp(selectedPatient.full_name, selectedPatient.phone, invoice.amount, c.id)}
                                     className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
