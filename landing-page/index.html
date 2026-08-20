@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SEO Meta Tags -->
+  <title>Yashfeen Homeopathy | Gentle Care, Natural Healing & Consultation</title>
+  <meta name="description" content="Welcome to Yashfeen Homeopathy. We provide individualized, safe, and natural treatments for chronic and acute ailments under professional care. Connect with us to begin your journey to holistic health.">
+  <meta name="keywords" content="homeopathy, homeopathic clinic, natural cure, chronic disease treatment, yashfeen homeopathy, holistic healing, online consultation">
+  <meta name="author" content="Yashfeen Homeopathy">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Yashfeen Homeopathy | Gentle Care, Natural Healing">
+  <meta property="og:description" content="Individualized, safe, and natural homeopathic treatments for chronic and acute ailments. Book your consultation today.">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Yashfeen Homeopathy | Gentle Care, Natural Healing">
+  <meta name="twitter:description" content="Individualized, safe, and natural homeopathic treatments for chronic and acute ailments. Book your consultation today.">
+
+  <!-- Google Fonts (Outfit and Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="light-mode">
+
+  <!-- Header & Navigation -->
+  <header id="main-header" class="main-header">
+    <div class="container header-container">
+      <a href="#hero" class="logo" id="logo-link">
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-pulse-icon">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+            <path d="M3.22 12H9.5l1.5-3 2 6 1.5-4 1.5 1h3.78"/>
+          </svg>
+        </div>
+        <span class="logo-text">Yashfeen <span class="logo-subtext">Homeopathy</span></span>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <nav id="desktop-nav" class="desktop-nav">
+        <ul>
+          <li><a href="#hero" class="nav-link active">Home</a></li>
+          <li><a href="#about" class="nav-link">About Clinic</a></li>
+          <li><a href="#services" class="nav-link">Our Services</a></li>
+          <li><a href="#info" class="nav-link">Working Hours</a></li>
+          <li><a href="#faq" class="nav-link">FAQs</a></li>
+        </ul>
+      </nav>
+
+      <!-- Action Group (Theme, Portal & Menu Toggle) -->
+      <div class="header-actions">
+        <!-- Theme Toggle -->
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Light/Dark Mode" title="Toggle Light/Dark Mode">
+          <svg id="sun-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
+          <svg id="moon-icon" class="theme-icon hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+        </button>
+
+        <!-- EMR Portal Button -->
+        <a href="https://app.yashfeenhomeopathy.online" target="_blank" rel="noopener noreferrer" class="btn btn-secondary emr-btn" id="emr-portal-btn">
+          <span>EMR Portal</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+        </a>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="menu-toggle" class="menu-toggle" aria-label="Toggle Navigation Menu">
+          <span class="hamburger"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Overlay -->
+  <div id="mobile-nav-overlay" class="mobile-nav-overlay">
+    <nav class="mobile-nav">
+      <ul>
+        <li><a href="#hero" class="mobile-nav-link">Home</a></li>
+        <li><a href="#about" class="mobile-nav-link">About Clinic</a></li>
+        <li><a href="#services" class="mobile-nav-link">Our Services</a></li>
+        <li><a href="#info" class="mobile-nav-link">Working Hours</a></li>
+        <li><a href="#faq" class="mobile-nav-link">FAQs</a></li>
+        <li class="mobile-action-item">
+          <a href="https://app.yashfeenhomeopathy.online" target="_blank" rel="noopener noreferrer" class="btn btn-secondary w-full" id="mobile-emr-btn">
+            Open EMR Portal
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Hero Section -->
+  <section id="hero" class="hero-section">
+    <div class="hero-bg-overlay"></div>
+    <div class="container hero-container">
+      <div class="hero-content">
+        <div class="badge fade-in">Holistic Natural Wellness</div>
+        <h1 class="fade-in delay-1">Gentle Healing, <br><span class="text-gradient">Permanent Cure</span></h1>
+        <p class="hero-lead fade-in delay-2">At Yashfeen Homeopathy, we address the root causes of chronic and acute health conditions using individualized, natural remedies. Safe for all ages with zero side effects.</p>
+        
+        <div class="hero-cta-group fade-in delay-3">
+          <a href="https://wa.me/923000000000?text=Hi%20Yashfeen%20Homeopathy%2C%20I%20would%20like%20to%20inquire%20about%20a%20consultation." target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="wa-hero-cta">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Connect on WhatsApp
+          </a>
+          <a href="#about" class="btn btn-outline" id="secondary-hero-cta">
+            Learn More
+          </a>
+        </div>
+        
+        <div class="hero-stats fade-in delay-4">
+          <div class="stat-item">
+            <span class="stat-number">15+</span>
+            <span class="stat-label">Years of Care</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">98%</span>
+            <span class="stat-label">Happy Patients</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">10k+</span>
+            <span class="stat-label">Cases Treated</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="hero-visual fade-in">
+        <div class="visual-card">
+          <div class="visual-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            100% Natural Treatments
+          </div>
+          <div class="visual-logo-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="visual-logo-svg">
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2Z"/>
+              <path d="M12 6c-3 0-4 2-4 4s1 4 4 4 4-2 4-4-1-4-4-4Z"/>
+              <path d="M12 14c-4 0-6 2-6 4v1h12v-1c0-2-2-4-6-4Z"/>
+              <path d="M12 4v2"/>
+              <path d="M12 18v2"/>
+            </svg>
+          </div>
+          <div class="visual-content">
+            <h3>Dr. Mohammad Yashfeen</h3>
+            <p class="visual-subtitle">Senior Homeopathic Consultant</p>
+            <div class="visual-tags">
+              <span>BHMS</span>
+              <span>R.H.M.P</span>
+              <span>Chronic Specialist</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="about-section scroll-reveal">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">Holistic Health Philosophy</span>
+        <h2>Individualized Treatment for Long-term Cure</h2>
+        <div class="header-divider"></div>
+      </div>
+      
+      <div class="about-grid">
+        <div class="about-info">
+          <h3>Welcome to Yashfeen Homeopathy</h3>
+          <p>We believe in treating the whole person—mind, body, and spirit—rather than just suppressing isolated symptoms. Our clinic, led by <strong>Dr. Mohammad Yashfeen</strong>, provides a welcoming space for patients seeking gentle and effective alternatives for deep-seated illnesses.</p>
+          <p>Homeopathy works by stimulating the body's natural defense systems. By matching the unique profile of your symptoms to custom-prepared botanical, mineral, and biological formulations, we catalyze a natural healing process that addresses root causes.</p>
+          
+          <ul class="about-bullets">
+            <li>
+              <div class="bullet-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div><strong>No Side Effects:</strong> Fully safe for infants, pregnant mothers, and elderly patients.</div>
+            </li>
+            <li>
+              <div class="bullet-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div><strong>Root Cause Analysis:</strong> We don't mask symptoms; we eliminate the underlying source.</div>
+            </li>
+            <li>
+              <div class="bullet-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div><strong>Constitutional Profiling:</strong> Custom remedies tailormade for your mental & physical makeup.</div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="about-cards">
+          <div class="about-card feature-1">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <h4>Safe & Non-Toxic</h4>
+            <p>Prepared in highly diluted micro-doses, our treatments are gentle on the stomach and organic.</p>
+          </div>
+          <div class="about-card feature-2">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+              </svg>
+            </div>
+            <h4>Experienced Doctor</h4>
+            <p>Under the guidance of registered experts specializing in complex, chronic autoimmune and lifestyle cases.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services & Treatments -->
+  <section id="services" class="services-section scroll-reveal">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">What We Treat</span>
+        <h2>Comprehensive Homeopathic Care</h2>
+        <div class="header-divider"></div>
+        <p class="section-lead-text">We offer tailored natural therapeutic services for a wide spectrum of health challenges, providing support where conventional medicine may fall short.</p>
+      </div>
+
+      <div class="services-grid">
+        <!-- Service 1 -->
+        <div class="service-card">
+          <div class="service-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="service-icon">
+              <path d="M4 14a8 8 0 0 1 16 0V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>
+              <path d="M12 2v4M12 6a4 4 0 0 0-4 4M12 6a4 4 0 0 1 4 4"/>
+            </svg>
+          </div>
+          <h3>Chronic Diseases</h3>
+          <p>Long-term therapeutic management for Migraine, Asthma, Rheumatoid Arthritis, IBS, Hypertension, and immune-mediated ailments.</p>
+          <ul class="service-list">
+            <li>Arthritis & Joint Pains</li>
+            <li>Allergies & Sinusitis</li>
+            <li>Digestive Disorders</li>
+          </ul>
+        </div>
+
+        <!-- Service 2 -->
+        <div class="service-card">
+          <div class="service-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="service-icon">
+              <path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/>
+              <path d="M17 16c1.1 0 2-.9 2-2v-2c0-1.1-.9-2-2-2h-1v6h1zM7 16c-1.1 0-2-.9-2-2v-2c0-1.1.9-2 2-2h1v6H7z"/>
+              <path d="M12 18a6 6 0 0 0-6 6h12a6 6 0 0 0-6-6z"/>
+            </svg>
+          </div>
+          <h3>Skin & Hair Treatment</h3>
+          <p>Natural healing for complex skin outbreaks and hair loss, restoring dermatological health internally without steroids.</p>
+          <ul class="service-list">
+            <li>Eczema & Psoriasis</li>
+            <li>Acne & Dermatitis</li>
+            <li>Alopecia & Dandruff</li>
+          </ul>
+        </div>
+
+        <!-- Service 3 -->
+        <div class="service-card">
+          <div class="service-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="service-icon">
+              <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <h3>Pediatric & Female Care</h3>
+          <p>Safe, sweet homeopathic remedies designed specifically for kids' immunity, developmental milestones, and hormonal health in women.</p>
+          <ul class="service-list">
+            <li>Bedwetting & Hyperactivity</li>
+            <li>PCOS & Menstrual Issues</li>
+            <li>Thyroid Management</li>
+          </ul>
+        </div>
+
+        <!-- Service 4 -->
+        <div class="service-card">
+          <div class="service-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="service-icon">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3>Constitutional Therapy</h3>
+          <p>Deep-acting therapeutic analysis designed around your mental state, physical tolerances, genetic history, and daily lifestyle.</p>
+          <ul class="service-list">
+            <li>Individualized Profiling</li>
+            <li>Chronic Resistance Cleansing</li>
+            <li>Preventative Wellness</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="cta-banner">
+        <div class="cta-banner-content">
+          <h3>Need a Consultation?</h3>
+          <p>Consult with Dr. Yashfeen in person at our clinic or schedule a remote voice/video session.</p>
+        </div>
+        <a href="https://wa.me/923000000000?text=Hi%20Yashfeen%20Homeopathy%2C%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener noreferrer" class="btn btn-light" id="wa-services-cta">
+          Book Appointment
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Clinic Hours & Location -->
+  <section id="info" class="info-section scroll-reveal">
+    <div class="container">
+      <div class="info-grid">
+        
+        <!-- Contact & Hours Card -->
+        <div class="info-card hours-card">
+          <h3>Working Hours & Contact</h3>
+          <div class="info-divider"></div>
+          
+          <ul class="hours-list">
+            <li>
+              <span class="day">Monday - Thursday</span>
+              <span class="time">05:00 PM - 09:00 PM</span>
+            </li>
+            <li>
+              <span class="day">Friday</span>
+              <span class="time">Closed</span>
+            </li>
+            <li>
+              <span class="day">Saturday - Sunday</span>
+              <span class="time">11:00 AM - 02:00 PM <br> 06:00 PM - 09:00 PM</span>
+            </li>
+          </ul>
+
+          <div class="quick-contacts">
+            <div class="contact-item">
+              <div class="contact-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </div>
+              <div>
+                <span class="contact-label">Phone</span>
+                <a href="tel:+923000000000" class="contact-value" id="phone-link">+92 (300) 000-0000</a>
+              </div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </div>
+              <div>
+                <span class="contact-label">Email</span>
+                <a href="mailto:info@yashfeenhomeopathy.online" class="contact-value" id="email-link">info@yashfeenhomeopathy.online</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location Card -->
+        <div class="info-card location-card">
+          <h3>Our Location</h3>
+          <div class="info-divider"></div>
+          <p class="location-text">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-location-icon"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <strong>Yashfeen Homeopathic Clinic</strong><br>
+            Main Clinic Boulevard, Block D, Phase 1,<br>
+            Lahore, Punjab, Pakistan.
+          </p>
+          
+          <!-- Interactive Map Container -->
+          <div class="map-container">
+            <div class="map-placeholder">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="map-placeholder-icon"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+              <span>Located in Phase 1, Lahore</span>
+              <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-secondary" id="google-maps-btn">
+                Open in Google Maps
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="faq-section scroll-reveal">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">Got Questions?</span>
+        <h2>Frequently Asked Questions</h2>
+        <div class="header-divider"></div>
+      </div>
+
+      <div class="faq-accordion-wrapper">
+        <!-- FAQ Item 1 -->
+        <div class="faq-item">
+          <button class="faq-question" id="faq-q1" aria-expanded="false">
+            <span>Is Homeopathy safe for newborn babies and pregnant women?</span>
+            <span class="faq-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer" id="faq-a1">
+            <p>Yes, absolutely. Homeopathic medicines are prepared through a scientific process of serial dilution and succussion (potentization). Because they are administered in ultra-low doses, they are completely non-toxic and do not cause side effects. This makes them ideal and completely safe for infants, young children, pregnant women, and nursing mothers.</p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 2 -->
+        <div class="faq-item">
+          <button class="faq-question" id="faq-q2" aria-expanded="false">
+            <span>How long does it take to see results with homeopathic treatments?</span>
+            <span class="faq-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer" id="faq-a2">
+            <p>The timeline for healing depends entirely on the nature of the condition (acute vs. chronic). Acute illnesses like seasonal flu, colds, or digestive upsets can show significant improvement within hours or days. For chronic, deep-seated autoimmune or lifestyle conditions (e.g., long-standing eczema, asthma, arthritis), the treatment process requires a few months as it aims to correct the underlying systemic imbalance rather than providing quick, temporary suppressive relief.</p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 3 -->
+        <div class="faq-item">
+          <button class="faq-question" id="faq-q3" aria-expanded="false">
+            <span>Does homeopathy react with conventional allopathic medications?</span>
+            <span class="faq-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer" id="faq-a3">
+            <p>No, homeopathic medicines do not interfere with conventional allopathic medications. They operate on a completely different physiological mechanism (stimulating vital force and immunological response). However, it is always recommended to inform Dr. Yashfeen about any other medications you are currently taking so that your overall healing plan can be monitored safely.</p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 4 -->
+        <div class="faq-item">
+          <button class="faq-question" id="faq-q4" aria-expanded="false">
+            <span>What is "Constitutional Treatment"?</span>
+            <span class="faq-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer" id="faq-a4">
+            <p>Constitutional treatment is the cornerstone of classical homeopathy. It is a holistic approach where the selected remedy matches not only your physical disease symptoms but also your entire constitution: your mental temperament, emotional stresses, genetic background, response to weather/temperature, and dietary preferences. By treating the constitutional state, we strengthen the patient's entire system, promoting long-term resilience and health.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-brand">
+        <a href="#hero" class="footer-logo">
+          <div class="logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-pulse-icon">
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+              <path d="M3.22 12H9.5l1.5-3 2 6 1.5-4 1.5 1h3.78"/>
+            </svg>
+          </div>
+          <span class="logo-text">Yashfeen <span class="logo-subtext">Homeopathy</span></span>
+        </a>
+        <p class="footer-tagline">Natural, gentle, and scientific healing for your entire family. Addressing root causes since 2011.</p>
+      </div>
+
+      <div class="footer-links">
+        <h4>Quick Navigation</h4>
+        <ul>
+          <li><a href="#hero">Home</a></li>
+          <li><a href="#about">About Clinic</a></li>
+          <li><a href="#services">Treatments</a></li>
+          <li><a href="#info">Working Hours</a></li>
+          <li><a href="#faq">FAQs</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-portal">
+        <h4>Doctor Portals</h4>
+        <p>Access EMR, generate digital prescriptions, invoices, and manage client registries.</p>
+        <a href="https://app.yashfeenhomeopathy.online" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" id="footer-emr-btn">
+          Open EMR App
+        </a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container footer-bottom-container">
+        <p>&copy; 2026 Yashfeen Homeopathy. All Rights Reserved.</p>
+        <p class="design-credit">Carefully crafted for natural wellness</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script File -->
+  <script src="script.js"></script>
+</body>
+</html>
