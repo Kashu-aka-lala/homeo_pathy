@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const waHeroCta = document.getElementById('wa-hero-cta');
   const waServicesCta = document.getElementById('wa-services-cta');
   const phoneLink = document.getElementById('phone-link');
+  const footerPhoneLink = document.getElementById('footer-phone-link');
 
   if (waHeroCta) {
     waHeroCta.href = `https://wa.me/${CLINIC_CONFIG.whatsapp}?text=${encodeURIComponent(CLINIC_CONFIG.defaultMessage)}`;
@@ -30,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (phoneLink) {
     phoneLink.href = `tel:${CLINIC_CONFIG.phone}`;
     phoneLink.textContent = CLINIC_CONFIG.phone.replace(/(\+\d{2})(\d{3})(\d{7})/, '$1 ($2) $3');
+  }
+  if (footerPhoneLink) {
+    footerPhoneLink.href = `tel:${CLINIC_CONFIG.phone}`;
+    footerPhoneLink.textContent = CLINIC_CONFIG.phone.replace(/(\+\d{2})(\d{3})(\d{7})/, '$1 ($2) $3');
   }
 
 
