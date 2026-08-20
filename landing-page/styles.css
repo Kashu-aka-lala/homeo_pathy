@@ -249,6 +249,15 @@ p {
   opacity: 0.9;
 }
 
+.logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1);
+}
+
 .logo-icon {
   display: flex;
   align-items: center;
