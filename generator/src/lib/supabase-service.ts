@@ -288,3 +288,131 @@ export async function uploadPdf(
     return { data: null, error: err?.message ?? 'Unknown upload error.' };
   }
 }
+
+// ─── Direct Updates & Upserts (New Handlers) ───────────────────────────────────
+
+export async function updateConsultation(
+  id: string,
+  updates: Partial<Omit<Consultation, 'id' | 'created_at'>>
+): Promise<ServiceResult<Consultation>> {
+  if (!isSupabaseConfigured || !supabase) {
+    return { data: null, error: 'Supabase is not configured.' };
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (updates.consultation_type !== undefined) {
+    payload.consultation_type = normalizeConsultationType(updates.consultation_type);
+  }
+  if (updates.status !== undefined) {
+    payload.status = updates.status;
+  }
+  if (updates.doctor_notes !== undefined) {
+    payload.doctor_notes = updates.doctor_notes.trim();
+  }
+  if (updates.patient_id !== undefined) {
+    payload.patient_id = updates.patient_id;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('consultations')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err?.message ?? 'Unknown error updating consultation.' };
+  }
+}
+
+export async function upsertPrescription(
+  consultationId: string,
+  medicines: Medicine[],
+  precautions: string[],
+  pdfUrl: string | null = null
+): Promise<ServiceResult<Prescription>> {
+  if (!isSupabaseConfigured || !supabase) {
+    return { data: null, error: 'Supabase is not configured.' };
+  }
+
+  const payload = {
+    consultation_id:  consultationId,
+    medicines:        medicines,
+    diet_precautions: precautions,
+    pdf_url:          pdfUrl,
+  };
+
+  try {
+    // Attempt standard upsert with onConflict: 'consultation_id'
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .upsert(payload, { onConflict: 'consultation_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('[upsertPrescription] Upsert failed, falling back to manual select-then-update/insert:', error.message);
+      
+      // Fallback: manual select-then-update/insert
+      const { data: existing } = await supabase
+        .from('prescriptions')
+        .select('id')
+        .eq('consultation_id', consultationId)
+        .maybeSingle();
+
+      let result;
+      if (existing?.id) {
+        result = await supabase
+          .from('prescriptions')
+          .update(payload)
+          .eq('id', existing.id)
+          .select()
+          .single();
+      } else {
+        result = await supabase
+          .from('prescriptions')
+          .insert([payload])
+          .select()
+          .single();
+      }
+      if (result.error) return { data: null, error: result.error.message };
+      return { data: result.data, error: null };
+    }
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err?.message ?? 'Unknown error upserting prescription.' };
+  }
+}
+
+export async function updateInvoiceStatus(
+  invoiceId: string,
+  status: string
+): Promise<ServiceResult<Invoice>> {
+  if (!isSupabaseConfigured || !supabase) {
+    return { data: null, error: 'Supabase is not configured.' };
+  }
+
+  const normalStatus = normalizePaymentStatus(status);
+  const payload = {
+    payment_status: normalStatus,
+    paid_at: normalStatus === 'PAID' ? new Date().toISOString() : null,
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('invoices')
+      .update(payload)
+      .eq('id', invoiceId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err?.message ?? 'Unknown error updating invoice status.' };
+  }
+}
+

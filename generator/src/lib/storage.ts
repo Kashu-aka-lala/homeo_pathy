@@ -28,6 +28,7 @@ export interface Invoice {
   payment_status: 'Pending' | 'Paid' | 'Waived' | 'PENDING' | 'PAID' | 'WAIVED';
   payment_method?: 'Bank Transfer' | 'Mobile Wallet' | 'Cash' | '';
   paid_at?: string | null;
+  pdf_url?: string | null;
   created_at?: string;
 }
 
@@ -290,25 +291,64 @@ export async function getPrescriptionByConsultation(consultationId: string): Pro
 }
 
 export async function savePrescription(prescription: Omit<Prescription, 'id' | 'created_at'>): Promise<Prescription> {
-  const newPrescription: Prescription = {
-    ...prescription,
-    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
-    created_at: new Date().toISOString(),
-  };
-
   if (supabase) {
-    const { data, error } = await supabase
+    // Check if it already exists for this consultation_id to prevent duplicates
+    const { data: existing } = await supabase
       .from('prescriptions')
-      .insert(newPrescription)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+      .select('id')
+      .eq('consultation_id', prescription.consultation_id)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .update({
+          medicines: prescription.medicines,
+          diet_precautions: prescription.diet_precautions,
+          pdf_url: prescription.pdf_url,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      const newPrescription: Prescription = {
+        ...prescription,
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
+        created_at: new Date().toISOString(),
+      };
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .insert(newPrescription)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
   } else {
+    // Check if it already exists in local storage
     const prescriptions = getLocalData<Prescription>(KEYS.PRESCRIPTIONS);
-    prescriptions.unshift(newPrescription);
-    saveLocalData(KEYS.PRESCRIPTIONS, prescriptions);
-    return newPrescription;
+    const existingIndex = prescriptions.findIndex((p) => p.consultation_id === prescription.consultation_id);
+    if (existingIndex !== -1) {
+      prescriptions[existingIndex] = {
+        ...prescriptions[existingIndex],
+        medicines: prescription.medicines,
+        diet_precautions: prescription.diet_precautions,
+        pdf_url: prescription.pdf_url,
+      };
+      saveLocalData(KEYS.PRESCRIPTIONS, prescriptions);
+      return prescriptions[existingIndex];
+    } else {
+      const newPrescription: Prescription = {
+        ...prescription,
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
+        created_at: new Date().toISOString(),
+      };
+      prescriptions.unshift(newPrescription);
+      saveLocalData(KEYS.PRESCRIPTIONS, prescriptions);
+      return newPrescription;
+    }
   }
 }
 

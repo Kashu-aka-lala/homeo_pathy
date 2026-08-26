@@ -4,11 +4,11 @@ import React, { useState, useMemo } from 'react';
 import { 
   Search, UserPlus, Phone, MapPin, Activity, 
   PlusCircle, Edit2, Calendar, FileText, CheckCircle2, 
-  Clock, AlertCircle, Eye, RefreshCw, ArrowLeft
+  Clock, AlertCircle, Eye, RefreshCw, ArrowLeft, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useEmrStore } from '@/lib/store';
 import { Patient, Consultation, Invoice, Prescription, supabase } from '@/lib/storage';
-import { createConsultation, createOrUpdateInvoice } from '@/lib/supabase-service';
+import { createConsultation, createOrUpdateInvoice, updateInvoiceStatus } from '@/lib/supabase-service';
 import AddPatientModal from './add-patient-modal';
 
 interface PatientRegistryProps {
@@ -19,13 +19,14 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
   const { 
     patients, consultations, invoices, prescriptions, 
     selectedPatientId, setSelectedPatientId, setActiveConsultationId,
-    addConsultation, addInvoice, loadData
+    addConsultation, addInvoice, loadData, updateInvoice
   } = useEmrStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
   const [isStartingConsultation, setIsStartingConsultation] = useState(false);
+  const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
 
   // 1. Filtered Patients list
   const filteredPatients = useMemo(() => {
@@ -134,16 +135,46 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
     onStartConsultation();
   };
 
-  const handleShareInvoiceWhatsApp = (patientName: string, phone: string, amount: number, consultationId: string) => {
-    const msg = `Assalam-o-Alaikum ${patientName}, your invoice for fee amount Rs. ${amount} is pending. Please complete the payment using Bank Transfer or Mobile Wallet. Thank you.`;
+  const handleShareInvoiceWhatsApp = (patientName: string, phone: string, amount: number, pdfUrl?: string | null) => {
+    let msg = `Assalam-o-Alaikum ${patientName}, your invoice for fee amount Rs. ${amount} is ready.`;
+    if (pdfUrl) {
+      msg += ` You can view or download it here: ${pdfUrl}`;
+    } else {
+      msg += ` Please complete the payment using Bank Transfer or Mobile Wallet.`;
+    }
+    msg += ` Thank you.`;
     const url = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
-  const handleShareRxWhatsApp = (patientName: string, phone: string, pdfUrl: string) => {
-    const msg = `Assalam-o-Alaikum ${patientName}, your prescription is ready. You can view or download it here: ${pdfUrl}`;
+  const handleShareRxWhatsApp = (patientName: string, phone: string, pdfUrl: string, precautions: string[] = []) => {
+    let msg = `Assalam-o-Alaikum ${patientName}, your prescription is ready. You can view or download it here: ${pdfUrl}`;
+    if (precautions && precautions.length > 0) {
+      msg += `\n\nDietary Restrictions & Instructions:\n• ${precautions.join('\n• ')}`;
+    }
     const url = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
+  };
+
+  const handleTogglePaymentStatus = async (invoice: Invoice, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const currentStatus = invoice.payment_status.toUpperCase();
+    const nextStatus = currentStatus === 'PAID' ? 'PENDING' : 'PAID';
+    
+    try {
+      if (supabase) {
+        await updateInvoiceStatus(invoice.id, nextStatus);
+      }
+      
+      // Update store so client-side state is reactive immediately
+      await updateInvoice({
+        ...invoice,
+        payment_status: nextStatus as any,
+        paid_at: nextStatus === 'PAID' ? new Date().toISOString() : null,
+      });
+    } catch (err) {
+      console.error('Failed to toggle payment status:', err);
+    }
   };
 
   return (
@@ -323,11 +354,12 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
                       ? new Date(c.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                       : '';
                     const isDraft = c.status === 'Draft';
+                    const isExpanded = expandedConsultationId === c.id;
 
                     return (
                       <div key={c.id} className="relative animate-slide-up">
                         {/* Timeline node dot */}
-                        <span className={`absolute -left-[31px] top-1 flex h-4 w-4 items-center justify-center rounded-full border bg-background ${
+                        <span className={`absolute -left-[31px] top-4 flex h-4 w-4 items-center justify-center rounded-full border bg-background ${
                           isDraft ? 'border-amber-500' : 'border-emerald-600'
                         }`}>
                           <span className={`h-2 w-2 rounded-full ${
@@ -336,69 +368,43 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
                         </span>
 
                         {/* Timeline content card */}
-                        <div className="bg-background border border-border rounded-xl p-5 shadow-xs">
-                          {/* Card Header */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3 mb-4">
-                            <div>
+                        <div 
+                          onClick={() => setExpandedConsultationId(isExpanded ? null : c.id)}
+                          className={`bg-background border rounded-xl overflow-hidden shadow-xs hover:border-primary/45 transition-all duration-300 cursor-pointer ${
+                            isExpanded ? 'border-primary/30 ring-1 ring-primary/5' : 'border-border'
+                          }`}
+                        >
+                          {/* ─── CARD HEADER (Always Visible Summary) ─── */}
+                          <div className="p-4 flex items-center justify-between gap-4 select-none">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                               <span className="text-xs font-semibold text-muted-foreground">{dateFormatted}</span>
-                              <div className="flex items-center gap-2 mt-1">
-                                <h5 className="font-bold text-sm text-foreground">Consultation</h5>
+                              <div className="flex items-center gap-2">
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                                  c.consultation_type === 'Complimentary' 
+                                  c.consultation_type.toUpperCase() === 'COMPLIMENTARY' 
                                     ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/10'
                                     : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10'
                                 }`}>
                                   {c.consultation_type}
                                 </span>
-                              </div>
-                            </div>
-                            <div>
-                              {isDraft ? (
-                                <button
-                                  onClick={() => handleResumeConsultation(c.id)}
-                                  className="flex items-center gap-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2.5 py-1 text-xs font-semibold hover:bg-amber-500/20 transition-all focus:outline-none"
-                                >
-                                  <Clock size={12} />
-                                  Resume Draft
-                                </button>
-                              ) : (
-                                <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                                  <CheckCircle2 size={12} />
-                                  Completed
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Doctor Clinical Notes */}
-                          {c.doctor_notes && (
-                            <div className="mb-4">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">Clinical Notes / Symptoms</span>
-                              <p className="text-xs text-foreground mt-1 whitespace-pre-line bg-muted/40 rounded-lg p-2.5 border border-border/40 leading-relaxed">
-                                {c.doctor_notes}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Invoice section */}
-                          {invoice && (
-                            <div className="bg-muted/20 border border-border rounded-xl p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Billing Information</span>
-                                <div className="flex items-baseline gap-1 mt-1">
-                                  <span className="text-xs font-medium text-muted-foreground">Amount:</span>
-                                  <span className="text-sm font-bold text-foreground">Rs. {invoice.amount}</span>
-                                </div>
-                                {invoice.payment_method && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    Method: <span className="font-semibold text-foreground">{invoice.payment_method}</span>
-                                  </div>
+                                
+                                {isDraft ? (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/10 animate-pulse">
+                                    Draft
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10">
+                                    Completed
+                                  </span>
                                 )}
                               </div>
-                              <div className="flex flex-col items-start sm:items-end justify-center gap-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground">Status:</span>
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              {/* Invoice payment summary */}
+                              {invoice && (
+                                <div className="hidden sm:flex items-center gap-2 text-xs">
+                                  <span className="font-semibold text-foreground">Rs. {invoice.amount}</span>
+                                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                                     invoice.payment_status.toUpperCase() === 'PAID'
                                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10'
                                       : invoice.payment_status.toUpperCase() === 'WAIVED'
@@ -408,89 +414,187 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
                                     {invoice.payment_status}
                                   </span>
                                 </div>
-                                {invoice.payment_status.toUpperCase() === 'PENDING' && (
-                                  <button
-                                    onClick={() => handleShareInvoiceWhatsApp(selectedPatient.full_name, selectedPatient.phone, invoice.amount, c.id)}
-                                    className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-                                  >
-                                    <Phone size={10} />
-                                    Send Invoice via WhatsApp
-                                  </button>
-                                )}
+                              )}
+                              
+                              {/* Accordion Expand/Collapse arrow */}
+                              <div className="text-muted-foreground hover:text-foreground p-1 transition-colors">
+                                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                               </div>
                             </div>
-                          )}
+                          </div>
 
-                          {/* Prescription section */}
-                          {rx ? (
-                            <div className="border border-border/80 rounded-xl p-4">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-2">Prescribed Remedies (Rx)</span>
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                  <thead>
-                                    <tr className="border-b border-border text-[10px] uppercase font-bold text-muted-foreground">
-                                      <th className="pb-1.5 font-bold">Remedy</th>
-                                      <th className="pb-1.5 font-bold">Potency</th>
-                                      <th className="pb-1.5 font-bold">Form</th>
-                                      <th className="pb-1.5 font-bold">Dosage & Frequency</th>
-                                      <th className="pb-1.5 font-bold">Duration</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-border/40 text-xs">
-                                    {rx.medicines.map((med, idx) => (
-                                      <tr key={idx} className="hover:bg-muted/10">
-                                        <td className="py-2 font-bold text-foreground">{med.remedy}</td>
-                                        <td className="py-2 text-muted-foreground">{med.potency}</td>
-                                        <td className="py-2 text-muted-foreground">{med.vehicle}</td>
-                                        <td className="py-2 text-foreground font-medium">{med.dosage}</td>
-                                        <td className="py-2 text-muted-foreground">{med.duration}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
+                          {/* ─── CARD EXPANDED CONTENT ─── */}
+                          {isExpanded && (
+                            <div className="px-4 pb-4 border-t border-border/40 pt-4 space-y-4 cursor-default animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                              {/* Clinical notes */}
+                              {c.doctor_notes ? (
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Clinical Notes / Symptoms</span>
+                                  <p className="text-xs text-foreground mt-1 whitespace-pre-line bg-muted/40 rounded-lg p-2.5 border border-border/40 leading-relaxed">
+                                    {c.doctor_notes}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Clinical Notes / Symptoms</span>
+                                  <p className="text-xs text-muted-foreground/80 mt-1 italic">
+                                    No notes recorded.
+                                  </p>
+                                </div>
+                              )}
 
-                              {rx.diet_precautions && rx.diet_precautions.length > 0 && (
-                                <div className="mt-4 border-t border-border pt-3">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Dietary Restrictions & Instructions</span>
-                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                    {rx.diet_precautions.map((tag, idx) => (
-                                      <span key={idx} className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/10 px-2 py-0.5 rounded-md text-[10px] font-bold">
-                                        {tag}
+                              {/* Invoice detailed info */}
+                              {invoice && (
+                                <div className="bg-muted/20 border border-border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div className="flex items-center gap-4 flex-wrap text-xs">
+                                    <div>
+                                      <span className="text-muted-foreground block text-[9px] uppercase tracking-wider font-bold">Amount Due</span>
+                                      <span className="font-bold text-foreground">Rs. {invoice.amount}</span>
+                                    </div>
+                                    {invoice.payment_method && (
+                                      <div>
+                                        <span className="text-muted-foreground block text-[9px] uppercase tracking-wider font-bold">Method</span>
+                                        <span className="font-semibold text-foreground">{invoice.payment_method}</span>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span className="text-muted-foreground block text-[9px] uppercase tracking-wider font-bold">Payment Status</span>
+                                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase inline-block ${
+                                        invoice.payment_status.toUpperCase() === 'PAID'
+                                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10'
+                                          : invoice.payment_status.toUpperCase() === 'WAIVED'
+                                          ? 'bg-gray-500/10 text-muted-foreground border border-gray-500/10'
+                                          : 'bg-rose-500/10 text-rose-500 border border-rose-500/10'
+                                      }`}>
+                                        {invoice.payment_status}
                                       </span>
-                                    ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    {/* Toggle Payment Status Button */}
+                                    {invoice.payment_status.toUpperCase() !== 'WAIVED' && (
+                                      <button
+                                        onClick={(e) => handleTogglePaymentStatus(invoice, e)}
+                                        className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors focus:outline-none"
+                                      >
+                                        Mark as {invoice.payment_status.toUpperCase() === 'PAID' ? 'Pending' : 'Paid'}
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               )}
 
-                              {rx.pdf_url && (
-                                <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 border-t border-border pt-3">
-                                  <a
-                                    href={rx.pdf_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
-                                  >
-                                    <FileText size={13} />
-                                    View PDF Prescription
-                                  </a>
+                              {/* Prescription Details */}
+                              {rx ? (
+                                <div className="border border-border/80 rounded-xl p-3.5 space-y-3">
+                                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Prescribed Remedies (Rx)</span>
+                                    {rx.pdf_url && (
+                                      <a
+                                        href={rx.pdf_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"
+                                      >
+                                        <FileText size={12} />
+                                        Open PDF in New Tab
+                                      </a>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                      <thead>
+                                        <tr className="border-b border-border text-[9px] uppercase font-bold text-muted-foreground">
+                                          <th className="pb-1.5 font-bold">Remedy</th>
+                                          <th className="pb-1.5 font-bold">Potency</th>
+                                          <th className="pb-1.5 font-bold">Form</th>
+                                          <th className="pb-1.5 font-bold">Dosage & Frequency</th>
+                                          <th className="pb-1.5 font-bold">Duration</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-border/40 text-xs">
+                                        {rx.medicines.map((med, idx) => (
+                                          <tr key={idx} className="hover:bg-muted/10">
+                                            <td className="py-2 font-bold text-foreground">{med.remedy}</td>
+                                            <td className="py-2 text-muted-foreground">{med.potency}</td>
+                                            <td className="py-2 text-muted-foreground">{med.vehicle}</td>
+                                            <td className="py-2 text-foreground font-medium">{med.dosage}</td>
+                                            <td className="py-2 text-muted-foreground">{med.duration}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  {rx.diet_precautions && rx.diet_precautions.length > 0 && (
+                                    <div className="border-t border-border/50 pt-2.5">
+                                      <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">Dietary Restrictions & Instructions</span>
+                                      <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {rx.diet_precautions.map((tag, idx) => (
+                                          <span key={idx} className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/10 px-2 py-0.5 rounded-md text-[9px] font-bold">
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                !isDraft && (
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-dashed border-amber-500/20 bg-amber-500/5 rounded-xl p-3.5 text-xs text-amber-600 font-medium">
+                                    <div className="flex items-center gap-2">
+                                      <AlertCircle size={14} className="flex-shrink-0" />
+                                      <span>No prescription recorded for this completed session.</span>
+                                    </div>
+                                    {/* Incomplete session handling */}
+                                    <button
+                                      onClick={() => handleResumeConsultation(c.id)}
+                                      className="flex items-center justify-center gap-1 bg-amber-500 text-white rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-amber-600 transition-colors focus:outline-none shadow-xs w-full sm:w-auto"
+                                    >
+                                      <PlusCircle size={12} />
+                                      Add Prescription to this Session
+                                    </button>
+                                  </div>
+                                )
+                              )}
+
+                              {/* ─── ACTION BUTTONS TOOLBAR ─── */}
+                              <div className="border-t border-border/50 pt-3 flex flex-wrap gap-2.5 items-center justify-between">
+                                <div className="flex gap-2">
                                   <button
-                                    onClick={() => handleShareRxWhatsApp(selectedPatient.full_name, selectedPatient.phone, rx.pdf_url || '')}
-                                    className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+                                    onClick={() => handleResumeConsultation(c.id)}
+                                    className="flex items-center gap-1.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground px-3 py-2 text-xs font-semibold transition-colors focus:outline-none"
                                   >
-                                    <Phone size={13} />
-                                    Resend Rx WhatsApp
+                                    <Edit2 size={12} />
+                                    Edit / Resume Session
                                   </button>
                                 </div>
-                              )}
-                            </div>
-                          ) : (
-                            !isDraft && (
-                              <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/5 border border-amber-500/10 rounded-lg p-2.5 mt-2 font-medium">
-                                <AlertCircle size={14} className="flex-shrink-0" />
-                                No prescription recorded for this completed session.
+
+                                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-stretch sm:items-center">
+                                  {invoice && invoice.payment_status.toUpperCase() === 'PENDING' && (
+                                    <button
+                                      onClick={() => handleShareInvoiceWhatsApp(selectedPatient.full_name, selectedPatient.phone, invoice.amount, invoice.pdf_url)}
+                                      className="flex items-center justify-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 px-3 py-2 rounded-lg transition-colors focus:outline-none"
+                                    >
+                                      <Phone size={12} />
+                                      Resend Invoice via WhatsApp
+                                    </button>
+                                  )}
+
+                                  {rx && rx.pdf_url && (
+                                    <button
+                                      onClick={() => handleShareRxWhatsApp(selectedPatient.full_name, selectedPatient.phone, rx.pdf_url || '', rx.diet_precautions)}
+                                      className="flex items-center justify-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 px-3 py-2 rounded-lg transition-colors focus:outline-none"
+                                    >
+                                      <Phone size={12} />
+                                      Resend Rx via WhatsApp
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                            )
+                            </div>
                           )}
                         </div>
                       </div>
