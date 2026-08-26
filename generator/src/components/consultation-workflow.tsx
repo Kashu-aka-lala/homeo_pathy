@@ -248,7 +248,7 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Upper Navigation Bar */}
-      <div className="flex items-center justify-between border-b border-border pb-4">
+      <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center space-x-3">
           <button
             onClick={onBack}
@@ -258,13 +258,13 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
           </button>
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">Active Consultation Session</span>
-            <h2 className="text-lg font-bold text-foreground">
+            <h2 className="text-base sm:text-lg font-bold text-foreground truncate max-w-[200px] sm:max-w-none">
               Patient: <span className="text-primary">{activePatient.full_name}</span>
             </h2>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <span className="text-xs text-muted-foreground hidden sm:inline-block">
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t border-border/40 pt-3 sm:border-none sm:pt-0">
+          <span className="text-xs text-muted-foreground">
             {activePatient.gender}, {activePatient.age} Yrs &bull; {activePatient.city}
           </span>
           <button
@@ -446,17 +446,17 @@ export default function ConsultationWorkflow({ onBack }: ConsultationWorkflowPro
               <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">
                 To guarantee billing compliance, the Homeopathic Rx builder remains locked until the fee invoice is verified as **Paid**.
               </p>
-              <div className="mt-6 flex gap-3.5">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3 w-full justify-center">
                 <button
                   onClick={handleMarkAsPaid}
-                  className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-all shadow-md focus:outline-none"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-all shadow-md focus:outline-none w-full sm:w-auto"
                 >
                   <Unlock size={14} />
                   Verify Payment (Paid)
                 </button>
                 <button
                   onClick={() => handleToggleConsultationType('Complimentary')}
-                  className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors focus:outline-none"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors focus:outline-none w-full sm:w-auto"
                 >
                   Make Complimentary
                 </button>

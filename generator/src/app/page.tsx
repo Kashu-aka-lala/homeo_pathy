@@ -130,7 +130,12 @@ export default function Dashboard() {
                 : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
             }`}>
               <Database size={11} />
-              {isSupabaseConfigured ? 'Supabase Connected' : 'Local Fallback Storage'}
+              <span className="hidden sm:inline">
+                {isSupabaseConfigured ? 'Supabase Connected' : 'Local Fallback Storage'}
+              </span>
+              <span className="sm:hidden">
+                {isSupabaseConfigured ? 'Supabase' : 'Local'}
+              </span>
             </div>
 
             {/* Dark Mode toggle */}
@@ -163,14 +168,14 @@ export default function Dashboard() {
             {stats.map((s, idx) => (
               <div 
                 key={idx} 
-                className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between shadow-xs hover:border-primary/20 transition-all duration-300"
+                className="bg-card border border-border rounded-2xl p-3 sm:p-4 flex items-center justify-between shadow-xs hover:border-primary/20 transition-all duration-300"
               >
                 <div>
                   <span className="text-[11px] font-semibold text-muted-foreground block uppercase tracking-wider">{s.title}</span>
-                  <span className="text-lg font-bold text-foreground block mt-1.5">{s.value}</span>
+                  <span className="text-base sm:text-lg font-bold text-foreground block mt-1.5">{s.value}</span>
                 </div>
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl border ${s.color}`}>
-                  <s.icon size={18} />
+                <div className={`flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl border ${s.color} flex-shrink-0 ml-2`}>
+                  <s.icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
                 </div>
               </div>
             ))}

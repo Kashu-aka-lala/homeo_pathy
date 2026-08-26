@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Search, UserPlus, Phone, MapPin, Activity, 
   PlusCircle, Edit2, Calendar, FileText, CheckCircle2, 
-  Clock, AlertCircle, Eye, RefreshCw
+  Clock, AlertCircle, Eye, RefreshCw, ArrowLeft
 } from 'lucide-react';
 import { useEmrStore } from '@/lib/store';
 import { Patient, Consultation, Invoice, Prescription, supabase } from '@/lib/storage';
@@ -149,7 +149,9 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-140px)] max-h-[800px]">
       {/* ----------------- LEFT PANEL: Patient Search & List ----------------- */}
-      <div className="md:col-span-4 flex flex-col bg-card border border-border rounded-2xl overflow-hidden shadow-sm h-full">
+      <div className={`md:col-span-4 flex flex-col bg-card border border-border rounded-2xl overflow-hidden shadow-sm h-full ${
+        selectedPatientId ? 'hidden md:flex' : 'flex'
+      }`}>
         {/* Search Header */}
         <div className="p-4 border-b border-border bg-muted/20 space-y-3">
           <div className="flex items-center justify-between">
@@ -229,13 +231,22 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
       </div>
 
       {/* ----------------- RIGHT PANEL: Patient Chronological History ----------------- */}
-      <div className="md:col-span-8 bg-card border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col h-full">
+      <div className={`md:col-span-8 bg-card border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col h-full ${
+        selectedPatientId ? 'flex' : 'hidden md:flex'
+      }`}>
         {selectedPatient ? (
           <div className="flex flex-col h-full overflow-hidden">
             {/* Patient Header Block */}
             <div className="p-6 border-b border-border bg-gradient-to-r from-emerald-500/5 to-teal-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSelectedPatientId(null)}
+                    className="md:hidden p-2 -ml-1 rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all focus:outline-none"
+                    title="Back to Patient List"
+                  >
+                    <ArrowLeft size={14} />
+                  </button>
                   <h3 className="text-lg font-bold text-foreground">{selectedPatient.full_name}</h3>
                   <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-xs font-semibold">
                     {selectedPatient.gender}, {selectedPatient.age} Years
@@ -453,7 +464,7 @@ export default function PatientRegistry({ onStartConsultation }: PatientRegistry
                               )}
 
                               {rx.pdf_url && (
-                                <div className="mt-4 flex justify-end gap-3 border-t border-border pt-3">
+                                <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 border-t border-border pt-3">
                                   <a
                                     href={rx.pdf_url}
                                     target="_blank"

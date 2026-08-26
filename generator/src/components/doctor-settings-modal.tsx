@@ -58,7 +58,7 @@ export default function DoctorSettingsModal({ isOpen, onClose }: DoctorSettingsM
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
       <div 
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-card text-card-foreground shadow-2xl border border-border animate-scale-in flex flex-col"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-card text-card-foreground shadow-2xl border border-border animate-scale-in flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -76,7 +76,7 @@ export default function DoctorSettingsModal({ isOpen, onClose }: DoctorSettingsM
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           {savedSuccess && (
             <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 animate-pulse">
               <Check size={16} /> Profile settings saved successfully!

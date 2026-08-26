@@ -297,10 +297,10 @@ export default function PrescriptionBuilder({ consultationId }: PrescriptionBuil
         {medicines.map((row, index) => (
           <div 
             key={index} 
-            className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border border-border bg-background/50 relative group hover:border-primary/30 transition-all"
+            className="grid grid-cols-2 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border border-border bg-background/50 relative group hover:border-primary/30 transition-all"
           >
             {/* Remedy Autocomplete */}
-            <div className="sm:col-span-4 relative">
+            <div className="col-span-2 sm:col-span-4 relative pr-8 sm:pr-0">
               <label className="text-[9px] font-semibold text-muted-foreground block mb-0.5 sm:hidden">Remedy Name</label>
               <input
                 type="text"
@@ -338,7 +338,7 @@ export default function PrescriptionBuilder({ consultationId }: PrescriptionBuil
             </div>
 
             {/* Potency Selection */}
-            <div className="sm:col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <label className="text-[9px] font-semibold text-muted-foreground block mb-0.5 sm:hidden">Potency</label>
               <select
                 value={row.potency}
@@ -352,7 +352,7 @@ export default function PrescriptionBuilder({ consultationId }: PrescriptionBuil
             </div>
 
             {/* Vehicle Selection */}
-            <div className="sm:col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <label className="text-[9px] font-semibold text-muted-foreground block mb-0.5 sm:hidden">Vehicle</label>
               <select
                 value={row.vehicle}
@@ -366,7 +366,7 @@ export default function PrescriptionBuilder({ consultationId }: PrescriptionBuil
             </div>
 
             {/* Dosage & Frequency */}
-            <div className="sm:col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <label className="text-[9px] font-semibold text-muted-foreground block mb-0.5 sm:hidden">Dosage</label>
               <input
                 type="text"
@@ -378,7 +378,7 @@ export default function PrescriptionBuilder({ consultationId }: PrescriptionBuil
             </div>
 
             {/* Duration */}
-            <div className="sm:col-span-1.5 col-span-2">
+            <div className="col-span-1 sm:col-span-1">
               <label className="text-[9px] font-semibold text-muted-foreground block mb-0.5 sm:hidden">Duration</label>
               <input
                 type="text"
@@ -390,7 +390,7 @@ export default function PrescriptionBuilder({ consultationId }: PrescriptionBuil
             </div>
 
             {/* Remove Action */}
-            <div className="sm:col-span-0.5 col-span-1 flex items-center justify-end sm:justify-center">
+            <div className="absolute right-2 top-2 sm:relative sm:right-0 sm:top-0 sm:col-span-1 flex items-center justify-end sm:justify-center">
               <button
                 type="button"
                 onClick={() => handleRemoveRow(index)}
