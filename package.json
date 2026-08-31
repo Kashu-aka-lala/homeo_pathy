@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "npm run dev --prefix generator",
+    "dev:landing": "npx http-server landing-page -p 8000",
     "build": "npm run build --prefix generator",
     "start": "npm run start --prefix generator"
   }
